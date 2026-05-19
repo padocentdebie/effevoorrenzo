@@ -26,7 +26,7 @@
             <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight flex items-center justify-center gap-2">
                 <i class="fa-solid fa-graduation-cap"></i> Engelse Leenwoorden Arena
             </h1>
-            <p class="text-indigo-100 text-xs sm:text-sm mt-1">Interactief & Live verbonden via Firebase Cloud</p>
+            <p class="text-indigo-100 text-xs sm:text-sm mt-1">Interactief & Live verbonden via Firebase Realtime Database</p>
             <div id="connection-badge" class="absolute top-4 right-4 bg-emerald-500/80 text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
                 <span class="w-1.5 h-1.5 bg-white rounded-full animate-ping"></span> Live
             </div>
@@ -210,7 +210,7 @@
         </main>
 
         <footer class="bg-slate-50 p-4 text-center text-xs text-slate-400 border-t border-slate-100">
-            Ontwikkeld voor interactief basisonderwijs &bull; Powered by Firebase Engine &copy; 2026
+            Ontwikkeld voor interactief basisonderwijs &bull; Powered by Firebase Realtime Database &copy; 2026
         </footer>
     </div>
 
@@ -232,8 +232,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, updateDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getDatabase, ref, set, get, onValue, update, remove, child } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB12mTMBnuxdC4W4htyFO_C7Dnh3maVKew",
@@ -246,12 +245,11 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+        const db = getDatabase(app);
 
-        // GEBRUIK EENVOUDIGERE PADEN VOOR BETROUWBAARHEID
-        const sessionDocRef = doc(db, 'session', 'current');
-        const studentsCollectionRef = collection(db, 'students');
+        // Referenties naar Realtime Database paden
+        const sessionRef = ref(db, 'session/current');
+        const studentsRef = ref(db, 'students');
 
         const woordenData = [
             { id: "w1", woord: "Computer", taal: "Engels", isEngels: true, betekenis: "Elektronisch rekenapparaat" },
@@ -283,15 +281,9 @@
         window.startSessie = async function(rol) {
             huidigeRol = rol;
             
-            try {
-                const userCredential = await signInAnonymously(auth);
-                studentId = userCredential.user.uid;
-                console.log('🔥 Ingelogd met ID:', studentId);
-            } catch (err) {
-                console.error('❌ Auth error:', err);
-                toonAlert('Fout', 'Er kon geen veilige live-verbinding met Firebase gemaakt worden: ' + err.message, 'error');
-                return;
-            }
+            // Genereer een uniek ID voor de student (gebaseerd op timestamp + random)
+            studentId = 'student_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            console.log('🔥 Student ID:', studentId);
 
             if (rol === 'leerling') {
                 const naamInput = document.getElementById('voornaam-input').value.trim();
@@ -305,7 +297,8 @@
                 document.getElementById('student-welcome-name').innerText = `Hoi, ${studentNaam}!`;
                 
                 try {
-                    await setDoc(doc(studentsCollectionRef, studentId), {
+                    // Sla student op in Realtime Database
+                    await set(ref(db, 'students/' + studentId), {
                         id: studentId,
                         name: studentNaam,
                         activeScreen: 1,
@@ -319,7 +312,7 @@
                         },
                         lastActive: new Date().toISOString()
                     });
-                    console.log('✅ Student geregistreerd:', studentNaam);
+                    console.log('✅ Student geregistreerd in Realtime Database:', studentNaam);
                 } catch (err) {
                     console.error('❌ Registratie error:', err);
                     toonAlert('Fout', 'Kon student niet registreren: ' + err.message, 'error');
@@ -335,10 +328,10 @@
                 luisterNaarDocent();
             } else if (rol === 'docent') {
                 try {
-                    const sessionSnap = await getDoc(sessionDocRef);
-                    if (!sessionSnap.exists()) {
-                        await setDoc(sessionDocRef, { screen: 1 });
-                        console.log('✅ Sessie aangemaakt');
+                    const snapshot = await get(sessionRef);
+                    if (!snapshot.exists()) {
+                        await set(sessionRef, { screen: 1 });
+                        console.log('✅ Sessie aangemaakt in Realtime Database');
                     }
                 } catch (err) {
                     console.error('❌ Sessie error:', err);
@@ -359,13 +352,13 @@
                 unsubscribeDocent();
             }
             
-            unsubscribeDocent = onSnapshot(sessionDocRef, 
+            unsubscribeDocent = onValue(sessionRef, 
                 async (snapshot) => {
                     if (!snapshot.exists()) {
                         console.log('⏳ Sessie document bestaat nog niet');
                         return;
                     }
-                    const data = snapshot.data();
+                    const data = snapshot.val();
                     console.log('📡 Docent update ontvangen:', data);
                     const targetScreen = data.screen;
 
@@ -381,7 +374,7 @@
                     }
                     
                     try {
-                        await updateDoc(doc(studentsCollectionRef, studentId), { activeScreen: targetScreen });
+                        await update(ref(db, 'students/' + studentId), { activeScreen: targetScreen });
                     } catch (err) {
                         console.error('❌ Update error:', err);
                     }
@@ -397,13 +390,16 @@
                 unsubscribeLeerlingen();
             }
             
-            unsubscribeLeerlingen = onSnapshot(studentsCollectionRef, 
+            unsubscribeLeerlingen = onValue(studentsRef, 
                 (snapshot) => {
-                    console.log('📊 Leerlingen update:', snapshot.size, 'leerlingen');
+                    const studentsData = snapshot.val() || {};
+                    const studentKeys = Object.keys(studentsData);
+                    console.log('📊 Leerlingen update:', studentKeys.length, 'leerlingen');
+                    
                     const tbody = document.getElementById('score-table-body');
                     tbody.innerHTML = '';
 
-                    if (snapshot.empty) {
+                    if (studentKeys.length === 0) {
                         tbody.innerHTML = `
                             <tr>
                                 <td colspan="5" class="py-12 text-center text-slate-400 italic">
@@ -414,8 +410,8 @@
                         return;
                     }
 
-                    snapshot.forEach((studentDoc) => {
-                        const student = studentDoc.data();
+                    studentKeys.forEach((studentKey) => {
+                        const student = studentsData[studentKey];
                         if (!student) return;
                         
                         const s1Matches = student.screen1Matches || {};
@@ -487,7 +483,7 @@
         window.setScherm = async function(schermNummer) {
             try {
                 console.log('📤 Scherm pushen:', schermNummer);
-                await updateDoc(sessionDocRef, { screen: schermNummer });
+                await set(sessionRef, { screen: schermNummer });
                 setActiefDocentKnop(schermNummer);
                 toonAlert('Gelukt!', `Iedereen is live overgezet naar Scherm ${schermNummer}.`, 'success');
             } catch (err) {
@@ -693,13 +689,13 @@
             }
 
             try {
-                const docRef = doc(studentsCollectionRef, studentId);
-                const snap = await getDoc(docRef);
+                const studentDocRef = ref(db, 'students/' + studentId);
+                const snap = await get(studentDocRef);
                 if (snap.exists()) {
-                    const data = snap.data();
+                    const data = snap.val();
                     const matches = data.screen1Matches || {};
                     matches[item.id] = betekenis;
-                    await updateDoc(docRef, { screen1Matches: matches });
+                    await update(studentDocRef, { screen1Matches: matches });
                     
                     const maxMatches = woordenData.filter(w => w.isEngels).length;
                     if (Object.keys(matches).length === maxMatches) {
@@ -794,17 +790,17 @@
             }
 
             try {
-                const docRef = doc(studentsCollectionRef, studentId);
-                const snap = await getDoc(docRef);
+                const studentDocRef = ref(db, 'students/' + studentId);
+                const snap = await get(studentDocRef);
                 if (snap.exists()) {
-                    const data = snap.data();
+                    const data = snap.val();
                     const answers = data.screen2Answers || {};
                     answers[item.id] = {
                         typed: ingevuld,
                         isCorrect: isCorrect,
                         typos: typos
                     };
-                    await updateDoc(docRef, { screen2Answers: answers });
+                    await update(studentDocRef, { screen2Answers: answers });
                 }
             } catch (err) {
                 console.error('❌ Dictee save error:', err);
@@ -874,16 +870,11 @@
                 console.log('🔄 Reset gestart...');
                 
                 // Reset sessie scherm
-                await updateDoc(sessionDocRef, { screen: 1 });
+                await set(sessionRef, { screen: 1 });
                 setActiefDocentKnop(1);
 
                 // Verwijder alle studenten
-                const snapshot = await getDocs(studentsCollectionRef);
-                const deletePromises = [];
-                snapshot.forEach((studentDoc) => {
-                    deletePromises.push(deleteDoc(doc(studentsCollectionRef, studentDoc.id)));
-                });
-                await Promise.all(deletePromises);
+                await remove(studentsRef);
                 
                 console.log('✅ Reset voltooid');
                 toonAlert('Sessie Gereset!', 'Alle live-scores en studenten zijn succesvol gewist.', 'success');
