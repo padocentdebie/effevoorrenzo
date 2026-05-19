@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
@@ -13,7 +13,6 @@
             --text: #2c3e50;
         }
 
-
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg);
@@ -24,7 +23,6 @@
             justify-content: center;
         }
 
-
         .container {
             background: white;
             padding: 30px;
@@ -34,9 +32,7 @@
             max-width: 600px;
         }
 
-
         h1, h2 { text-align: center; color: var(--primary); }
-
 
         .btn {
             background-color: var(--primary);
@@ -51,14 +47,11 @@
             transition: 0.2s;
         }
 
-
         .btn:hover { filter: brightness(0.9); }
         .btn-audio { background-color: #f39c12; width: auto; margin-bottom: 10px;}
 
-
         .screen { display: none; }
         .active { display: block; }
-
 
         .word-grid {
             display: grid;
@@ -66,7 +59,6 @@
             gap: 10px;
             margin: 20px 0;
         }
-
 
         .word-card {
             background: #edf2f7;
@@ -78,10 +70,8 @@
             transition: 0.2s;
         }
 
-
         .word-card.selected-english { background-color: var(--success); color: white; }
         .word-card.selected-wrong { background-color: var(--error); color: white; }
-
 
         .sentence-box {
             background: #f8fafc;
@@ -90,7 +80,6 @@
             border-radius: 8px;
             margin-bottom: 20px;
         }
-
 
         input[type="text"] {
             width: 100%;
@@ -102,7 +91,6 @@
             margin-top: 10px;
         }
 
-
         .feedback {
             margin-top: 10px;
             font-weight: bold;
@@ -110,20 +98,225 @@
         }
         .correct { color: var(--success); }
         .incorrect { color: var(--error); }
+        
+        .welcome-msg {
+            text-align: center;
+            font-style: italic;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+        }
     </style>
+
+    <!-- Firebase SDK's inladen via CDN -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // Jouw Firebase configuratie
+        const firebaseConfig = {
+            apiKey: "AIzaSyB12mTMBnuxdC4W4htyFO_C7Dnh3maVKew",
+            authDomain: "decoroefening.firebaseapp.com",
+            databaseURL: "https://decoroefening-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "decoroefening",
+            storageBucket: "decoroefening.firebasestorage.app",
+            messagingSenderId: "945998495824",
+            appId: "1:945998495824:web:a76dc7519b3b262a021155"
+        };
+
+        // Firebase Initialiseren
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Data voor Scherm 1
+        const woordenLijst = [
+            { woord: "Computer (Engels)", isEngels: true },
+            { woord: "Hauptbahnhof (Duits)", isEngels: false },
+            { woord: "Pizza (Italiaans)", isEngels: false },
+            { woord: "Aquarium (Latijn)", isEngels: false },
+            { woord: "Smartphone (Engels)", isEngels: true },
+            { woord: "Überhaupt (Duits)", isEngels: false },
+            { woord: "Design (Engels)", isEngels: true },
+            { woord: "Terras (Latijn)", isEngels: false }
+        ];
+
+        // Data voor Scherm 2
+        const dicteeZinnen = [
+            { id: 1, zin: "Ik stuur een e-mail naar de leraar.", antwoord: "Ik stuur een e-mail naar de leraar." },
+            { id: 2, zin: "Zij draagt vandaag een mooie jeans.", antwoord: "Zij draagt vandaag een mooie jeans." },
+            { id: 3, zin: "Wij kijken naar een spannende livestream.", antwoord: "Wij kijken naar een spannende livestream." }
+        ];
+
+        let huidigeRol = '';
+        let leerlingNaam = '';
+
+        // Functies globaal beschikbaar maken voor de HTML-knoppen
+        window.startSessie = function(rol) {
+            huidigeRol = rol;
+            
+            if (rol === 'leerling') {
+                const naamInput = document.getElementById('voornaam-input').value.trim();
+                if (naamInput === '') {
+                    alert('Vul eerst je voornaam in om te kunnen starten!');
+                    return;
+                }
+                leerlingNaam = naamInput;
+            }
+
+            document.getElementById('login-screen').classList.remove('active');
+            
+            if (rol === 'docent') {
+                document.getElementById('docent-screen').classList.add('active');
+                // Zet de database standaard op scherm 1 bij opstarten docent
+                set(ref(database, 'sessie/huidigScherm'), '1'); 
+            } else {
+                document.getElementById('student-welcome').innerText = "Succes, " + leerlingNaam + "!";
+                laadScherm1();
+                laadScherm2();
+                luisterNaarDocent(); // Start live verbinding met Firebase
+            }
+        }
+
+        // Docent push functie naar Firebase
+        window.setScherm = function(schermNummer) {
+            set(ref(database, 'sessie/huidigScherm'), targetScherm.toString());
+            alert('Je hebt alle leerlingen live naar Scherm ' + schermNummer + ' gestuurd!');
+        }
+
+        // Live luisteren naar veranderingen in de Firebase Database
+        function luisterNaarDocent() {
+            const schermRef = ref(database, 'sessie/huidigScherm');
+            onValue(schermRef, (snapshot) => {
+                const actiefScherm = snapshot.val();
+                
+                // Alleen schermen wisselen als we echt als leerling zijn ingelogd
+                if (huidigeRol === 'leerling') {
+                    document.getElementById('leerling-scherm1').classList.remove('active');
+                    document.getElementById('leerling-scherm2').classList.remove('active');
+                    
+                    if (actiefScherm === '1') {
+                        document.getElementById('leerling-scherm1').classList.add('active');
+                    } else if (actiefScherm === '2') {
+                        document.getElementById('leerling-scherm2').classList.add('active');
+                    }
+                }
+            });
+        }
+
+        // Scherm 1 opbouwen
+        function laadScherm1() {
+            const container = document.getElementById('grid-container');
+            container.innerHTML = '';
+            let goedeAntwoorden = 0;
+            let totaalEngels = woordenLijst.filter(w => w.isEngels).length;
+
+            woordenLijst.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'word-card';
+                card.innerText = item.woord;
+                
+                card.onclick = function() {
+                    if (item.isEngels) {
+                        if (!card.classList.contains('selected-english')) {
+                            card.classList.add('selected-english');
+                            goedeAntwoorden++;
+                        }
+                        if (goedeAntwoorden === totaalEngels) {
+                            document.getElementById('scherm1-feedback').innerHTML = "<span class='correct'>Goed gedaan! Je hebt alle Engelse woorden gevonden!</span>";
+                        }
+                    } else {
+                        card.classList.add('selected-wrong');
+                        setTimeout(() => card.classList.remove('selected-wrong'), 800);
+                    }
+                };
+                container.appendChild(card);
+            });
+        }
+
+        // Scherm 2 (Dictee) opbouwen
+        function laadScherm2() {
+            const container = document.getElementById('dictee-container');
+            container.innerHTML = '';
+
+            dicteeZinnen.forEach(item => {
+                const box = document.createElement('div');
+                box.className = 'sentence-box';
+
+                const audioBtn = document.createElement('button');
+                audioBtn.className = 'btn btn-audio';
+                audioBtn.innerText = '🔊 Luister naar zin ' + item.id;
+                audioBtn.onclick = function() {
+                    spreekZinUit(item.zin);
+                };
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.placeholder = 'Typ hier de hele zin na...';
+                input.id = 'input-zin-' + item.id;
+
+                const feedback = document.createElement('div');
+                feedback.className = 'feedback';
+                feedback.id = 'feedback-zin-' + item.id;
+
+                input.oninput = function() {
+                    controleerZin(input.value, item.antwoord, feedback);
+                };
+
+                box.appendChild(audioBtn);
+                box.appendChild(input);
+                box.appendChild(feedback);
+                container.appendChild(box);
+            });
+        }
+
+        // Spraakfunctie (Text to Speech)
+        function spreekZinUit(tekst) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const speech = new SpeechSynthesisUtterance(tekst);
+                speech.lang = 'nl-NL';
+                speech.pitch = 1;
+                speech.rate = 0.9;
+                window.speechSynthesis.speak(speech);
+            } else {
+                alert("Helaas ondersteunt jouw browser geen geluid. Gebruik Google Chrome.");
+            }
+        }
+
+        // Automatische nakijklogica
+        function controleerZin(ingevuld, correct, feedbackElement) {
+            let schoonIngevuld = ingevuld.trim().toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+            let schoonCorrect = correct.trim().toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+
+            if (schoonIngevuld === "") {
+                feedbackElement.style.display = 'none';
+            } else if (schoonIngevuld === schoonCorrect) {
+                feedbackElement.style.display = 'block';
+                feedbackElement.innerHTML = "<span class='correct'>✓ Helemaal goed!</span>";
+            } else {
+                feedbackElement.style.display = 'block';
+                feedbackElement.innerHTML = "<span class='incorrect'>Typ nog even verder...</span>";
+            }
+        }
+    </script>
 </head>
 <body>
-
 
 <div class="container">
     <!-- INLOGSCHERM -->
     <div id="login-screen" class="screen active">
         <h1>Engelse Leenwoorden</h1>
         <p style="text-align:center;">Kies je rol om te starten:</p>
+        
         <button class="btn" onclick="startSessie('docent')">Ik ben de Docent</button>
-        <button class="btn" onclick="startSessie('leerling')" style="background-color: #9b59b6;">Ik ben een Leerling</button>
+        
+        <hr style="margin: 25px 0; border: 0; border-top: 1px solid #ccc;">
+        
+        <div style="margin-bottom: 15px;">
+            <label for="voornaam-input" style="font-weight: bold; display: block; margin-bottom: 5px;">Voornaam leerling:</label>
+            <input type="text" id="voornaam-input" placeholder="Typ hier je voornaam...">
+        </div>
+        <button class="btn" onclick="startSessie('leerling')" style="background-color: #9b59b6; margin-top: 0;">Ik ben een Leerling</button>
     </div>
-
 
     <!-- DOCENT SCHERM -->
     <div id="docent-screen" class="screen">
@@ -131,204 +324,25 @@
         <p>Bestuur hier welk scherm de leerlingen zien:</p>
         <button class="btn" onclick="setScherm(1)">Zet leerlingen op Scherm 1 (Woorden herkennen)</button>
         <button class="btn" onclick="setScherm(2)" style="background-color: #e67e22;">Zet leerlingen op Scherm 2 (Het Dictee)</button>
-        <p style="text-align: center; margin-top: 20px; color: gray;">Tip: Open een extra tabblad als leerling om het live te zien veranderen!</p>
+        <p style="text-align: center; margin-top: 20px; color: gray;">Tip: Open een extra tabblad of browser als leerling om het live te testen!</p>
     </div>
-
 
     <!-- LEERLING SCHERM 1: HERKENNEN -->
     <div id="leerling-scherm1" class="screen">
         <h2>Scherm 1: Herken het Engelse Woord</h2>
+        <div id="student-welcome" class="welcome-msg"></div>
         <p>Klik op de woorden die oorspronkelijk uit het <strong>Engels</strong> komen!</p>
         <div class="word-grid" id="grid-container"></div>
         <div id="scherm1-feedback" style="text-align: center; font-weight: bold; margin-top: 15px;"></div>
     </div>
 
-
     <!-- LEERLING SCHERM 2: DICTEE -->
     <div id="leerling-scherm2" class="screen">
         <h2>Scherm 2: Het Dictee</h2>
         <p>Luister naar de zin en typ hem na. Let goed op het Engelse leenwoord!</p>
-        
         <div id="dictee-container"></div>
     </div>
 </div>
-
-
-<script>
-    // Data voor Scherm 1 (Woord, Taal, IsEngelsLeenwoord)
-    const woordenLijst = [
-        { woord: "Computer (Engels)", isEngels: true },
-        { woord: "Hauptbahnhof (Duits)", isEngels: false },
-        { woord: "Pizza (Italiaans)", isEngels: false },
-        { woord: "Aquarium (Latijn)", isEngels: false },
-        { woord: "Smartphone (Engels)", isEngels: true },
-        { woord: "Überhaupt (Duits)", isEngels: false },
-        { woord: "Design (Engels)", isEngels: true },
-        { woord: "Terras (Latijn)", isEngels: false }
-    ];
-
-
-    // Data voor Scherm 2 (Zinnen voor het dictee)
-    const dicteeZinnen = [
-        { id: 1, zin: "Ik stuur een e-mail naar de leraar.", antwoord: "Ik stuur een e-mail naar de leraar." },
-        { id: 2, zin: "Zij draagt vandaag een mooie jeans.", antwoord: "Zij draagt vandaag een mooie jeans." },
-        { id: 3, zin: "Wij kijken naar een spannende livestream.", antwoord: "Wij kijken naar een spannende livestream." }
-    ];
-
-
-    let huidigeRol = '';
-
-
-    function startSessie(rol) {
-        huidigeRol = rol;
-        document.getElementById('login-screen').classList.remove('active');
-        
-        if (rol === 'docent') {
-            document.getElementById('docent-screen').classList.add('active');
-            localStorage.setItem('huidigScherm', '1'); // Standaard start op scherm 1
-        } else {
-            laadScherm1();
-            laadScherm2();
-            checkSync(); // Start de live-luisteraar voor de leerling
-        }
-    }
-
-
-    // Docent functie om het scherm aan te passen
-    function setScherm(schermNummer) {
-        localStorage.setItem('huidigScherm', schermNummer);
-        alert('Je hebt alle leerlingen naar Scherm ' + schermNummer + ' gestuurd!');
-    }
-
-
-    // Live synchronisatie check voor leerlingen (kijkt elke seconde of docent klikt)
-    function checkSync() {
-        if (huidigeRol === 'leerling') {
-            setInterval(() => {
-                let actiefScherm = localStorage.getItem('huidigScherm');
-                document.getElementById('leerling-scherm1').classList.remove('active');
-                document.getElementById('leerling-scherm2').classList.remove('active');
-                
-                if (actiefScherm === '1') {
-                    document.getElementById('leerling-scherm1').classList.add('active');
-                } else if (actiefScherm === '2') {
-                    document.getElementById('leerling-scherm2').classList.add('active');
-                }
-            }, 1000);
-        }
-    }
-
-
-    // Scherm 1 opbouwen
-    function laadScherm1() {
-        const container = document.getElementById('grid-container');
-        container.innerHTML = '';
-        let goedeAntwoorden = 0;
-        let totaalEngels = woordenLijst.filter(w => w.isEngels).length;
-
-
-        woordenLijst.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'word-card';
-            card.innerText = item.woord;
-            
-            card.onclick = function() {
-                if (item.isEngels) {
-                    if (!card.classList.contains('selected-english')) {
-                        card.classList.add('selected-english');
-                        goedeAntwoorden++;
-                    }
-                    if (goedeAntwoorden === totaalEngels) {
-                        document.getElementById('scherm1-feedback').innerHTML = "<span class='correct'>Goed gedaan! Je hebt alle Engelse woorden gevonden!</span>";
-                    }
-                } else {
-                    card.classList.add('selected-wrong');
-                    setTimeout(() => card.classList.remove('selected-wrong'), 800); // flitst rood bij fout
-                }
-            };
-            container.appendChild(card);
-        });
-    }
-
-
-    // Scherm 2 (Dictee) opbouwen en Text-to-Speech
-    function laadScherm2() {
-        const container = document.getElementById('dictee-container');
-        container.innerHTML = '';
-
-
-        dicteeZinnen.forEach(item => {
-            const box = document.createElement('div');
-            box.className = 'sentence-box';
-
-
-            const audioBtn = document.createElement('button');
-            audioBtn.className = 'btn btn-audio';
-            audioBtn.innerText = '🔊 Luister naar zin ' + item.id;
-            audioBtn.onclick = function() {
-                spreekZinUit(item.zin);
-            };
-
-
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.placeholder = 'Typ hier de hele zin na...';
-            input.id = 'input-zin-' + item.id;
-
-
-            const feedback = document.createElement('div');
-            feedback.className = 'feedback';
-            feedback.id = 'feedback-zin-' + item.id;
-
-
-            // Automatische nakijk-functie tijdens het typen of bij enter
-            input.oninput = function() {
-                controleerZin(input.value, item.antwoord, feedback);
-            };
-
-
-            box.appendChild(audioBtn);
-            box.appendChild(input);
-            box.appendChild(feedback);
-            container.appendChild(box);
-        });
-    }
-
-
-    // Spraakfunctie (Text to Speech)
-    function spreekZinUit(tekst) {
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel(); // Stop eventuele vorige spraak
-            const speech = new SpeechSynthesisUtterance(tekst);
-            speech.lang = 'nl-NL'; // Nederlandse stem
-            speech.pitch = 1;
-            speech.rate = 0.9; // Iets langzamer voor 12-jarigen
-            window.speechSynthesis.speak(speech);
-        } else {
-            alert("Helaas ondersteunt jouw browser geen geluid. Gebruik Google Chrome.");
-        }
-    }
-
-
-    // Automatische nakijklogica
-    function controleerZin(ingevuld, correct, feedbackElement) {
-        // Schoonmaken van tekst (hoofdletters en leestekens negeren voor soepelere controle)
-        let schoonIngevuld = ingevuld.trim().toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
-        let schoonCorrect = correct.trim().toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
-
-
-        if (schoonIngevuld === "") {
-            feedbackElement.style.display = 'none';
-        } else if (schoonIngevuld === schoonCorrect) {
-            feedbackElement.style.display = 'block';
-            feedbackElement.innerHTML = "<span class='correct'>✓ Helemaal goed!</span>";
-        } else {
-            feedbackElement.style.display = 'block';
-            feedbackElement.innerHTML = "<span class='incorrect'>Typ nog even verder...</span>";
-        }
-    }
-</script>
-
 
 </body>
 </html>
