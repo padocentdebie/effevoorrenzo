@@ -3,116 +3,262 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Engelse Leenwoorden Dictee</title>
+    <title>Engelse Leenwoorden & Dictee</title>
+    <!-- Tailwind CSS voor een modern & adaptief design -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome voor prachtige onderwijspictogrammen -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        :root {
-            --primary: #4a90e2;
-            --success: #2ecc71;
-            --error: #e74c3c;
-            --bg: #f5f7fa;
-            --text: #2c3e50;
-        }
-
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
+            font-family: 'Plus Jakarta Sans', sans-serif;
         }
-
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 600px;
-        }
-
-        h1, h2 { text-align: center; color: var(--primary); }
-
-        .btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            width: 100%;
-            margin-top: 10px;
-            transition: 0.2s;
-        }
-
-        .btn:hover { filter: brightness(0.9); }
-        .btn-audio { background-color: #f39c12; width: auto; margin-bottom: 10px;}
-
-        .screen { display: none; }
-        .active { display: block; }
-
-        .word-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin: 20px 0;
-        }
-
-        .word-card {
-            background: #edf2f7;
-            padding: 15px;
-            text-align: center;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.2s;
-        }
-
-        .word-card.selected-english { background-color: var(--success); color: white; }
-        .word-card.selected-wrong { background-color: var(--error); color: white; }
-
-        .sentence-box {
-            background: #f8fafc;
-            border: 2px solid #e2e8f0;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-
-        input[type="text"] {
-            width: 100%;
-            padding: 10px;
-            box-sizing: border-box;
-            border: 2px solid #cbd5e1;
-            border-radius: 6px;
-            font-size: 16px;
-            margin-top: 10px;
-        }
-
-        .feedback {
-            margin-top: 10px;
-            font-weight: bold;
-            display: none;
-        }
-        .correct { color: var(--success); }
-        .incorrect { color: var(--error); }
-        
-        .welcome-msg {
-            text-align: center;
-            font-style: italic;
-            color: #7f8c8d;
-            margin-bottom: 15px;
+        /* Custom styles voor drag and drop */
+        .drag-over {
+            border: 3px dashed #4f46e5 !important;
+            background-color: #eef2ff !important;
+            transform: scale(1.02);
         }
     </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 flex flex-col items-center justify-start p-2 sm:p-6">
 
-    <!-- Firebase SDK's inladen via CDN -->
+    <div class="w-full max-w-5xl bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden min-h-[650px] flex flex-col justify-between my-4">
+        
+        <!-- HEADER -->
+        <header class="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 p-6 text-white text-center shadow-md relative">
+            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight flex items-center justify-center gap-2">
+                <i class="fa-solid fa-graduation-cap"></i> Engelse Leenwoorden Arena
+            </h1>
+            <p class="text-indigo-100 text-xs sm:text-sm mt-1">Interactief & Live verbonden via Firebase Cloud</p>
+            <div id="connection-badge" class="absolute top-4 right-4 bg-emerald-500/80 text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                <span class="w-1.5 h-1.5 bg-white rounded-full animate-ping"></span> Live
+            </div>
+        </header>
+
+        <!-- MAIN BODY CONTAINER -->
+        <main class="flex-grow p-4 sm:p-8 flex flex-col justify-start">
+
+            <!-- ALERT NOTIFICATION BANNER (Vervangt gevaarlijke alerts) -->
+            <div id="custom-alert" class="hidden mb-6 p-4 rounded-xl border flex items-center justify-between transition-all duration-300">
+                <div class="flex items-center gap-3">
+                    <span id="alert-icon" class="text-xl"></span>
+                    <p id="alert-message" class="font-medium text-sm"></p>
+                </div>
+                <button onclick="sluitAlert()" class="text-slate-400 hover:text-slate-600 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- ================= INLOGSCHERM ================= -->
+            <div id="login-screen" class="space-y-6 max-w-md mx-auto w-full my-auto py-8">
+                <div class="text-center space-y-2">
+                    <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto text-3xl shadow-sm">
+                        <i class="fa-solid fa-user-graduate"></i>
+                    </div>
+                    <h2 class="text-2xl font-extrabold text-slate-700">Welkom bij de Oefening!</h2>
+                    <p class="text-slate-500 text-sm">Log in met je voornaam om live mee te doen met de klas.</p>
+                </div>
+
+                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200/60 space-y-4 shadow-inner">
+                    <div>
+                        <label for="voornaam-input" class="block text-sm font-bold text-slate-600 mb-1">Jouw Voornaam:</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                                <i class="fa-solid fa-signature"></i>
+                            </span>
+                            <input type="text" id="voornaam-input" placeholder="Type je voornaam..." 
+                                class="w-full pl-10 pr-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 transition-colors text-lg font-semibold">
+                        </div>
+                    </div>
+
+                    <button onclick="startSessie('leerling')" 
+                        class="w-full bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-bold py-3 px-4 rounded-xl shadow-md hover:shadow-lg transition-all text-lg flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-right-to-bracket"></i> Start als Leerling
+                    </button>
+                </div>
+
+                <div class="text-center">
+                    <button onclick="startSessie('docent')" class="text-sm text-indigo-500 hover:text-indigo-700 hover:underline font-semibold transition-all flex items-center justify-center gap-1 mx-auto">
+                        <i class="fa-solid fa-chalkboard-user"></i> Inloggen als Docent Dashboard
+                    </button>
+                </div>
+            </div>
+
+            <!-- ================= DOCENT SCHERM (DASHBOARD) ================= -->
+            <div id="docent-screen" class="hidden space-y-8">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-100 pb-6 gap-4">
+                    <div>
+                        <h2 class="text-2xl font-extrabold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-shield-halved text-indigo-600"></i> Docenten Regiekamer
+                        </h2>
+                        <p class="text-slate-500 text-sm">Stuur de schermen van leerlingen live aan en bekijk gemaakte fouten.</p>
+                    </div>
+                    <button onclick="toonResetBevestiging()" class="bg-rose-500 hover:bg-rose-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all flex items-center gap-2 shadow-md hover:shadow-rose-200 self-start md:self-auto active:scale-95">
+                        <i class="fa-solid fa-arrow-rotate-left"></i> Reset Alle Data & Scores
+                    </button>
+                </div>
+
+                <!-- Live Control Knoppen -->
+                <div class="bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100/60 space-y-4">
+                    <h3 class="text-xs font-bold text-indigo-500 uppercase tracking-wider flex items-center gap-1">
+                        <i class="fa-solid fa-tower-broadcast"></i> Actief scherm pushen naar klas:
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <button onclick="setScherm(1)" id="btn-scherm1" class="py-4 px-6 bg-white border-2 border-slate-200 rounded-2xl font-bold text-sm text-slate-700 hover:bg-indigo-50 hover:border-indigo-300 transition-all flex items-center justify-between shadow-sm">
+                            <span class="flex items-center gap-3">
+                                <span class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold">1</span>
+                                <span>Scherm 1: Leenwoorden & Betekenissen</span>
+                            </span>
+                            <i class="fa-solid fa-chevron-right text-slate-400"></i>
+                        </button>
+                        <button onclick="setScherm(2)" id="btn-scherm2" class="py-4 px-6 bg-white border-2 border-slate-200 rounded-2xl font-bold text-sm text-slate-700 hover:bg-indigo-50 hover:border-indigo-300 transition-all flex items-center justify-between shadow-sm">
+                            <span class="flex items-center gap-3">
+                                <span class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold">2</span>
+                                <span>Scherm 2: Het Grote Dictee (5 zinnen)</span>
+                            </span>
+                            <i class="fa-solid fa-chevron-right text-slate-400"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Scorebord & Typo tracker -->
+                <div class="space-y-4">
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                        Live Voortgang & Typefouten Analyse:
+                    </h3>
+                    
+                    <div class="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase">
+                                    <tr>
+                                        <th class="py-4 px-6">Leerling</th>
+                                        <th class="py-4 px-4 text-center">Actief Scherm</th>
+                                        <th class="py-4 px-4 text-center">Scherm 1 (Matches)</th>
+                                        <th class="py-4 px-4 text-center">Scherm 2 (Dictee)</th>
+                                        <th class="py-4 px-6">Gedetecteerde Typefouten / Feedback</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="score-table-body" class="divide-y divide-slate-100 text-sm">
+                                    <tr>
+                                        <td colspan="5" class="py-12 text-center text-slate-400 italic">
+                                            <i class="fa-solid fa-spinner animate-spin text-2xl mb-2 block text-indigo-500"></i>
+                                            Wachten op leerlingen die inloggen...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= LEERLING HOOFDSCHERM ================= -->
+            <div id="leerling-screen" class="hidden space-y-6">
+                <!-- Live Status Bar -->
+                <div class="bg-slate-100 p-4 border border-slate-200/80 rounded-2xl flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-sm" id="avatar-letter">?</div>
+                        <div>
+                            <span class="font-extrabold text-slate-700 text-base" id="student-welcome-name">Hoi!</span>
+                            <p class="text-xs text-slate-500" id="current-screen-subtitle">Wachten op de leraar...</p>
+                        </div>
+                    </div>
+                    <span class="bg-emerald-100 text-emerald-800 text-[11px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle animate-pulse text-emerald-500"></i> Live Verbonden
+                    </span>
+                </div>
+
+                <!-- LEERLING SCHERM 1: SLEEP EN KOPPEL SPEELVELD -->
+                <div id="leerling-scherm1" class="hidden space-y-6">
+                    <div class="bg-gradient-to-r from-indigo-50 to-purple-50 p-5 rounded-2xl border border-indigo-100/60">
+                        <h3 class="text-lg font-bold text-indigo-950 flex items-center gap-2">
+                            <i class="fa-solid fa-puzzle-piece text-indigo-600 animate-bounce"></i> Stap 1: Koppel de Betekenissen!
+                        </h3>
+                        <p class="text-sm text-indigo-800/80 mt-1 leading-relaxed">
+                            <strong>Hoe speel je dit?</strong> <br>
+                            1. Klik eerst op de woorden die uit het <strong>Engels</strong> komen. <br>
+                            2. Sleep daarna de juiste betekenissen van onderen naar het juiste Engelse woord toe! <br>
+                            <span class="text-xs text-indigo-500 font-semibold"><i class="fa-solid fa-mobile-screen"></i> Gebruik je een tablet of telefoon? Klik op een leenwoord en klik daarna op de betekenis om ze te verbinden!</span>
+                        </p>
+                    </div>
+
+                    <!-- Raster van leenwoorden -->
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Het Woordenveld:</h4>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="drag-grid-container">
+                            <!-- Dynamisch ingeladen via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Tray met draggables -->
+                    <div class="bg-slate-100 p-5 rounded-2xl border border-slate-200">
+                        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1">
+                            <i class="fa-solid fa-hand-holding-hand"></i> Betekenissen om te koppelen:
+                        </h4>
+                        <div class="flex flex-wrap gap-3" id="draggables-container">
+                            <!-- Draggables komen hier -->
+                        </div>
+                    </div>
+
+                    <div id="scherm1-feedback" class="text-center py-4"></div>
+                </div>
+
+                <!-- LEERLING SCHERM 2: HET DICTEE -->
+                <div id="leerling-scherm2" class="hidden space-y-6">
+                    <div class="bg-gradient-to-r from-amber-50 to-orange-50 p-5 rounded-2xl border border-amber-100/60 text-center sm:text-left">
+                        <h3 class="text-lg font-bold text-amber-950 flex items-center justify-center sm:justify-start gap-2">
+                            <i class="fa-solid fa-pen-nib text-amber-600"></i> Stap 2: Het Grote Dictee
+                        </h3>
+                        <p class="text-sm text-amber-800/80 mt-1">
+                            Luister goed naar de zinnen en typ ze exact over. Let heel goed op de spelling van de Engelse leenwoorden!
+                        </p>
+                    </div>
+
+                    <!-- Dictee container voor de 5 zinnen -->
+                    <div class="space-y-6" id="dictee-container">
+                        <!-- Dynamisch ingeladen via JS -->
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="bg-slate-50 p-4 text-center text-xs text-slate-400 border-t border-slate-100">
+            Ontwikkeld voor interactief basisonderwijs &bull; Powered by Firebase Engine &copy; 2026
+        </footer>
+    </div>
+
+    <!-- CUSTOM MODAL VOOR CONFIRMATIONS -->
+    <div id="confirm-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 space-y-4 transform transition-all scale-95">
+            <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center text-2xl mx-auto">
+                <i class="fa-solid fa-triangle-exclamation animate-pulse"></i>
+            </div>
+            <div class="text-center space-y-2">
+                <h3 class="text-lg font-bold text-slate-800" id="modal-title">Weet je het zeker?</h3>
+                <p class="text-sm text-slate-500" id="modal-text">Dit wist alle huidige leerlinggegevens en live-scores.</p>
+            </div>
+            <div class="flex gap-3 pt-2">
+                <button onclick="sluitModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 font-bold text-sm transition-all active:scale-[0.98]">Annuleren</button>
+                <button onclick="bevestigResetSessie()" class="flex-1 py-2.5 bg-rose-500 hover:bg-rose-600 rounded-xl text-white font-bold text-sm transition-all shadow-md shadow-rose-100 active:scale-[0.98]">Ja, wis alles</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FIREBASE MODULE CODE -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, updateDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Jouw Firebase configuratie
+        // De door jou aangeleverde Firebase configuratie
         const firebaseConfig = {
             apiKey: "AIzaSyB12mTMBnuxdC4W4htyFO_C7Dnh3maVKew",
             authDomain: "decoroefening.firebaseapp.com",
@@ -123,147 +269,489 @@
             appId: "1:945998495824:web:a76dc7519b3b262a021155"
         };
 
-        // Firebase Initialiseren
+        // Initialiseren
         const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
 
-        // Data voor Scherm 1
-        const woordenLijst = [
-            { woord: "Computer (Engels)", isEngels: true },
-            { woord: "Hauptbahnhof (Duits)", isEngels: false },
-            { woord: "Pizza (Italiaans)", isEngels: false },
-            { woord: "Aquarium (Latijn)", isEngels: false },
-            { woord: "Smartphone (Engels)", isEngels: true },
-            { woord: "Überhaupt (Duits)", isEngels: false },
-            { woord: "Design (Engels)", isEngels: true },
-            { woord: "Terras (Latijn)", isEngels: false }
+        // Volgens RULE 1: Strict paths gebruiken met unieke appId
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'decoroefening';
+        const sessionDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'session', 'current');
+        const studentsCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'students');
+
+        // DATA VOOR SCHERM 1 (De drag-and-drop / klik-oefening)
+        const woordenData = [
+            { id: "w1", woord: "Computer", taal: "Engels", isEngels: true, betekenis: "Elektronisch rekenapparaat" },
+            { id: "w2", woord: "Hauptbahnhof", taal: "Duits", isEngels: false },
+            { id: "w3", woord: "Pizza", taal: "Italiaans", isEngels: false },
+            { id: "w4", woord: "Aquarium", taal: "Latijn", isEngels: false },
+            { id: "w5", woord: "Smartphone", taal: "Engels", isEngels: true, betekenis: "Slimme mobiele telefoon" },
+            { id: "w6", woord: "Überhaupt", taal: "Duits", isEngels: false },
+            { id: "w7", woord: "Design", taal: "Engels", isEngels: true, betekenis: "Ontwerp of vormgeving" },
+            { id: "w8", woord: "Jeans", taal: "Engels", isEngels: true, betekenis: "Stevige spijkerbroek" }
         ];
 
-        // Data voor Scherm 2
+        // DATA VOOR SCHERM 2 (Het dictee met 5 zinnen)
         const dicteeZinnen = [
-            { id: 1, zin: "Ik stuur een e-mail naar de leraar.", antwoord: "Ik stuur een e-mail naar de leraar." },
-            { id: 2, zin: "Zij draagt vandaag een mooie jeans.", antwoord: "Zij draagt vandaag een mooie jeans." },
-            { id: 3, zin: "Wij kijken naar een spannende livestream.", antwoord: "Wij kijken naar een spannende livestream." }
+            { id: 1, zin: "Ik stuur een e-mail naar de leraar.", antwoord: "Ik stuur een e-mail naar de leraar.", leenwoord: "e-mail" },
+            { id: 2, zin: "Zij draagt vandaag een mooie jeans.", antwoord: "Zij draagt vandaag een mooie jeans.", leenwoord: "jeans" },
+            { id: 3, zin: "Wij kijken naar een spannende livestream.", antwoord: "Wij kijken naar een spannende livestream.", leenwoord: "livestream" },
+            { id: 4, zin: "Hij luistert graag naar die nieuwe podcast.", antwoord: "Hij luistert graag naar die nieuwe podcast.", leenwoord: "podcast" },
+            { id: 5, zin: "Zij maakt een back-up van haar bestanden.", antwoord: "Zij maakt een back-up van haar bestanden.", leenwoord: "back-up" }
         ];
 
+        // State variabelen
         let huidigeRol = '';
-        let leerlingNaam = '';
+        let studentNaam = '';
+        let studentId = '';
+        let geselecteerdWoordId = null; // Voor tik-alternatief op mobiel
+        let geselecteerdeBetekenis = null; // Voor tik-alternatief op mobiel
 
-        // Functies globaal beschikbaar maken voor de HTML-knoppen
-        window.startSessie = function(rol) {
+        // Sessie starten
+        window.startSessie = async function(rol) {
             huidigeRol = rol;
             
+            // Toon laad-status
+            const btnText = rol === 'docent' ? 'Laden docent...' : 'Laden leerling...';
+            
+            // 1. Eerst inloggen (RULE 3 - Auth Before Queries)
+            try {
+                const userCredential = await signInAnonymously(auth);
+                studentId = userCredential.user.uid;
+            } catch (err) {
+                toonAlert('Fout', 'Er kon geen veilige live-verbinding met Firebase gemaakt worden: ' + err.message, 'error');
+                return;
+            }
+
             if (rol === 'leerling') {
                 const naamInput = document.getElementById('voornaam-input').value.trim();
-                if (naamInput === '') {
-                    alert('Vul eerst je voornaam in om te kunnen starten!');
+                if (!naamInput) {
+                    toonAlert('Voornaam vereist', 'Typ eerst je voornaam in om te starten!', 'warning');
                     return;
                 }
-                leerlingNaam = naamInput;
-            }
+                studentNaam = naamInput;
+                
+                // Activeer leerling UI elementen
+                document.getElementById('avatar-letter').innerText = studentNaam.charAt(0).toUpperCase();
+                document.getElementById('student-welcome-name').innerText = `Hoi, ${studentNaam}!`;
+                
+                // Registreer student in de database
+                await setDoc(doc(studentsCollectionRef, studentId), {
+                    id: studentId,
+                    name: studentNaam,
+                    activeScreen: 1,
+                    screen1Matches: {}, // opgeslagen gekoppelde betekenissen
+                    screen2Answers: {
+                        1: { typed: "", isCorrect: false, typos: [] },
+                        2: { typed: "", isCorrect: false, typos: [] },
+                        3: { typed: "", isCorrect: false, typos: [] },
+                        4: { typed: "", isCorrect: false, typos: [] },
+                        5: { typed: "", isCorrect: false, typos: [] }
+                    },
+                    lastActive: new Date().toISOString()
+                });
 
-            document.getElementById('login-screen').classList.remove('active');
-            
-            if (rol === 'docent') {
-                document.getElementById('docent-screen').classList.add('active');
-                // Zet de database standaard op scherm 1 bij opstarten docent
-                set(ref(database, 'sessie/huidigScherm'), '1'); 
-            } else {
-                document.getElementById('student-welcome').innerText = "Succes, " + leerlingNaam + "!";
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('leerling-screen').classList.remove('hidden');
+                
+                // Render schermen voorbereidend
                 laadScherm1();
                 laadScherm2();
-                luisterNaarDocent(); // Start live verbinding met Firebase
+                
+                // Luister live naar scherm-switches van de docent
+                luisterNaarDocent();
+            } else if (rol === 'docent') {
+                // Initialiseer sessie docent in DB
+                const sessionSnap = await getDoc(sessionDocRef);
+                if (!sessionSnap.exists()) {
+                    await setDoc(sessionDocRef, { screen: 1 });
+                }
+
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('docent-screen').classList.remove('hidden');
+
+                // Activeer live feed van leerlingen
+                luisterNaarLeerlingen();
+                setActiefDocentKnop(1);
+            }
+        };
+
+        // Live luisteraar voor de leerlingen (schakelt schermen via docent-push)
+        function luisterNaarDocent() {
+            onSnapshot(sessionDocRef, async (snapshot) => {
+                if (!snapshot.exists()) return;
+                const data = snapshot.val();
+                const targetScreen = data.screen;
+
+                // Update UI-scherm
+                document.getElementById('leerling-scherm1').classList.add('hidden');
+                document.getElementById('leerling-scherm2').classList.add('hidden');
+
+                if (targetScreen === 1) {
+                    document.getElementById('leerling-scherm1').classList.remove('active', 'hidden');
+                    document.getElementById('current-screen-subtitle').innerText = "Stap 1: Engelse woorden & betekenissen";
+                    await updateDoc(doc(studentsCollectionRef, studentId), { activeScreen: 1 });
+                } else if (targetScreen === 2) {
+                    document.getElementById('leerling-scherm2').classList.remove('active', 'hidden');
+                    document.getElementById('current-screen-subtitle').innerText = "Stap 2: Het Grote Dictee";
+                    await updateDoc(doc(studentsCollectionRef, studentId), { activeScreen: 2 });
+                }
+            }, (error) => {
+                console.error("Fout bij ophalen sessie:", error);
+            });
+        }
+
+        // Live luisteraar voor de docent (updates van alle leerlingen scorebord)
+        function luisterNaarLeerlingen() {
+            onSnapshot(studentsCollectionRef, (snapshot) => {
+                const tbody = document.getElementById('score-table-body');
+                tbody.innerHTML = '';
+
+                if (snapshot.empty) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="py-12 text-center text-slate-400 italic">
+                                Er zijn momenteel geen actieve of verbonden leerlingen.
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                snapshot.forEach((studentDoc) => {
+                    const student = studentDoc.val();
+                    
+                    // Scherm 1 Voortgang (aantal correct gekoppelde betekenissen)
+                    const s1MatchesCount = Object.keys(student.screen1Matches || {}).length;
+                    const maxMatches = woordenData.filter(w => w.isEngels).length;
+                    
+                    // Scherm 2 Voortgang (aantal correcte dictee zinnen)
+                    let s2CorrectCount = 0;
+                    let typoLijstHTML = '';
+
+                    Object.keys(student.screen2Answers || {}).forEach((zinId) => {
+                        const ans = student.screen2Answers[zinId];
+                        if (ans.isCorrect) s2CorrectCount++;
+                        
+                        // Analyseer live fouten voor docent-overzicht
+                        if (ans.typed && !ans.isCorrect && ans.typos && ans.typos.length > 0) {
+                            typoLijstHTML += `
+                                <div class="bg-rose-50 border border-rose-100 p-2 rounded-lg text-xs mb-1">
+                                    <span class="font-bold text-rose-700">Zin ${zinId}:</span> 
+                                    <span class="italic text-slate-600">"${ans.typed}"</span><br>
+                                    <span class="text-[10px] text-slate-500 font-semibold"><i class="fa-solid fa-triangle-exclamation"></i> Fout gedetecteerd: ${ans.typos.join(', ')}</span>
+                                </div>
+                            `;
+                        }
+                    });
+
+                    // Genereer de rij voor deze student
+                    const row = document.createElement('tr');
+                    row.className = "hover:bg-slate-50/50 transition-all";
+                    row.innerHTML = `
+                        <td class="py-4 px-6 font-bold text-slate-700 flex items-center gap-2">
+                            <span class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-black">
+                                ${student.name.charAt(0).toUpperCase()}
+                            </span>
+                            ${student.name}
+                        </td>
+                        <td class="py-4 px-4 text-center">
+                            <span class="text-xs font-bold px-2.5 py-1 rounded-full ${student.activeScreen === 1 ? 'bg-indigo-100 text-indigo-800' : 'bg-amber-100 text-amber-800'}">
+                                Scherm ${student.activeScreen}
+                            </span>
+                        </td>
+                        <td class="py-4 px-4 text-center">
+                            <span class="font-bold text-slate-600">${s1MatchesCount} / ${maxMatches}</span>
+                            <div class="w-20 bg-slate-100 rounded-full h-1.5 mx-auto mt-1 overflow-hidden">
+                                <div class="bg-emerald-500 h-1.5 transition-all" style="width: ${(s1MatchesCount / maxMatches) * 100}%"></div>
+                            </div>
+                        </td>
+                        <td class="py-4 px-4 text-center">
+                            <span class="font-bold text-slate-600">${s2CorrectCount} / 5</span>
+                            <div class="w-20 bg-slate-100 rounded-full h-1.5 mx-auto mt-1 overflow-hidden">
+                                <div class="bg-amber-500 h-1.5 transition-all" style="width: ${(s2CorrectCount / 5) * 100}%"></div>
+                            </div>
+                        </td>
+                        <td class="py-4 px-6">
+                            ${typoLijstHTML || '<span class="text-xs text-emerald-600 font-bold"><i class="fa-solid fa-circle-check"></i> Geen actieve fouten of nog niet gestart</span>'}
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }, (error) => {
+                console.error("Fout bij live observeren van leerlingen:", error);
+            });
+        }
+
+        // Scherm live wisselen vanuit docent
+        window.setScherm = async function(schermNummer) {
+            try {
+                await updateDoc(sessionDocRef, { screen: schermNummer });
+                setActiefDocentKnop(schermNummer);
+                toonAlert('Gelukt!', `Iedereen is live overgezet naar Scherm ${schermNummer}.`, 'success');
+            } catch (err) {
+                toonAlert('Fout', 'Kon het scherm niet pushen: ' + err.message, 'error');
+            }
+        };
+
+        function setActiefDocentKnop(actiefNummer) {
+            const btn1 = document.getElementById('btn-scherm1');
+            const btn2 = document.getElementById('btn-scherm2');
+            
+            // Reset styles
+            btn1.classList.remove('border-indigo-500', 'bg-indigo-50/50');
+            btn2.classList.remove('border-indigo-500', 'bg-indigo-50/50');
+
+            if (actiefNummer === 1) {
+                btn1.classList.add('border-indigo-500', 'bg-indigo-50/50');
+            } else if (actiefNummer === 2) {
+                btn2.classList.add('border-indigo-500', 'bg-indigo-50/50');
             }
         }
 
-        // Docent push functie naar Firebase
-        window.setScherm = function(schermNummer) {
-            set(ref(database, 'sessie/huidigScherm'), targetScherm.toString());
-            alert('Je hebt alle leerlingen live naar Scherm ' + schermNummer + ' gestuurd!');
-        }
-
-        // Live luisteren naar veranderingen in de Firebase Database
-        function luisterNaarDocent() {
-            const schermRef = ref(database, 'sessie/huidigScherm');
-            onValue(schermRef, (snapshot) => {
-                const actiefScherm = snapshot.val();
-                
-                // Alleen schermen wisselen als we echt als leerling zijn ingelogd
-                if (huidigeRol === 'leerling') {
-                    document.getElementById('leerling-scherm1').classList.remove('active');
-                    document.getElementById('leerling-scherm2').classList.remove('active');
-                    
-                    if (actiefScherm === '1') {
-                        document.getElementById('leerling-scherm1').classList.add('active');
-                    } else if (actiefScherm === '2') {
-                        document.getElementById('leerling-scherm2').classList.add('active');
-                    }
-                }
-            });
-        }
-
-        // Scherm 1 opbouwen
+        // SCHERM 1: UI OPBOUWEN & LOGICA
         function laadScherm1() {
-            const container = document.getElementById('grid-container');
+            const container = document.getElementById('drag-grid-container');
             container.innerHTML = '';
-            let goedeAntwoorden = 0;
-            let totaalEngels = woordenLijst.filter(w => w.isEngels).length;
 
-            woordenLijst.forEach(item => {
+            woordenData.forEach((item) => {
                 const card = document.createElement('div');
-                card.className = 'word-card';
-                card.innerText = item.woord;
-                
-                card.onclick = function() {
-                    if (item.isEngels) {
-                        if (!card.classList.contains('selected-english')) {
-                            card.classList.add('selected-english');
-                            goedeAntwoorden++;
-                        }
-                        if (goedeAntwoorden === totaalEngels) {
-                            document.getElementById('scherm1-feedback').innerHTML = "<span class='correct'>Goed gedaan! Je hebt alle Engelse woorden gevonden!</span>";
-                        }
-                    } else {
-                        card.classList.add('selected-wrong');
-                        setTimeout(() => card.classList.remove('selected-wrong'), 800);
-                    }
-                };
+                card.id = `card-${item.id}`;
+                card.className = 'word-card bg-white border-2 border-slate-200 p-4 rounded-2xl text-center font-bold text-slate-700 shadow-sm transition-all duration-300 cursor-pointer flex flex-col justify-between min-h-[110px]';
+                card.innerHTML = `
+                    <span class="text-sm text-slate-400 font-medium block mb-1">Talenveld</span>
+                    <span class="text-lg block tracking-wide">${item.woord}</span>
+                    <div class="drop-zone hidden mt-3 p-2 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 text-[10px] text-slate-400 flex flex-col items-center justify-center gap-1">
+                        <i class="fa-solid fa-cloud-arrow-down text-base text-slate-300"></i>
+                        <span>Sleep betekenis hier</span>
+                    </div>
+                `;
+
+                // Stap 1: Alleen Engelse leenwoorden moeten herkend worden
+                card.onclick = () => verwerkWoordKlik(item, card);
+
+                // Setup drag-and-drop listeners op de target card
+                card.addEventListener('dragover', (e) => e.preventDefault());
+                card.addEventListener('dragenter', () => card.classList.add('drag-over'));
+                card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+                card.addEventListener('drop', (e) => verwerkDropOpWoord(e, item, card));
+
                 container.appendChild(card);
             });
+
+            laadDraggables();
         }
 
-        // Scherm 2 (Dictee) opbouwen
+        // Draggables tray bouwen met de betekenissen
+        function laadDraggables() {
+            const container = document.getElementById('draggables-container');
+            container.innerHTML = '';
+
+            // Verkrijg alle betekenissen van Engelse woorden en schud ze willekeurig
+            const betekenissen = woordenData
+                .filter(w => w.isEngels)
+                .map(w => w.betekenis)
+                .sort(() => Math.random() - 0.5);
+
+            betekenissen.forEach((betekenis, index) => {
+                const el = document.createElement('div');
+                el.id = `drag-${index}`;
+                el.draggable = true;
+                el.className = 'bg-white border-2 border-indigo-200 text-indigo-900 text-xs font-bold px-4 py-3 rounded-xl shadow-sm cursor-grab hover:shadow-md hover:bg-indigo-50 transition-all flex items-center gap-2 select-none active:cursor-grabbing';
+                el.innerText = betekenis;
+
+                // Drag and Drop support
+                el.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', betekenis);
+                    e.dataTransfer.setData('element-id', el.id);
+                });
+
+                // Tap support voor mobiel
+                el.addEventListener('click', () => verwerkBetekenisSelectie(betekenis, el));
+
+                container.appendChild(el);
+            });
+        }
+
+        // Herkennen van het Engelse woord
+        function verwerkWoordKlik(item, cardElement) {
+            // Als het al gematched is, doe niets
+            if (cardElement.classList.contains('matched')) return;
+
+            if (item.isEngels) {
+                if (!cardElement.classList.contains('selected-english')) {
+                    cardElement.classList.remove('border-slate-200');
+                    cardElement.classList.add('selected-english', 'border-indigo-500', 'bg-indigo-50/40');
+                    cardElement.querySelector('.text-sm').innerText = "Engels Leenwoord ✓";
+                    cardElement.querySelector('.text-sm').className = "text-xs text-indigo-600 font-bold block mb-1";
+                    
+                    // Toon dropzone
+                    cardElement.querySelector('.drop-zone').classList.remove('hidden');
+                }
+                
+                // Klik-alternatief voor mobiel
+                geselecteerdWoordId = item.id;
+                probeerTikMatch(item, cardElement);
+            } else {
+                // Niet-engels leenwoord
+                cardElement.classList.add('selected-wrong', 'bg-rose-100', 'border-rose-400', 'text-rose-800');
+                cardElement.querySelector('.text-sm').innerText = `${item.taal} ✗`;
+                cardElement.querySelector('.text-sm').className = "text-xs text-rose-600 font-bold block mb-1";
+                
+                setTimeout(() => {
+                    cardElement.classList.remove('selected-wrong', 'bg-rose-100', 'border-rose-400', 'text-rose-800');
+                    cardElement.classList.add('border-slate-200', 'text-slate-700');
+                    cardElement.querySelector('.text-sm').innerText = "Talenveld";
+                    cardElement.querySelector('.text-sm').className = "text-sm text-slate-400 font-medium block mb-1";
+                }, 1000);
+            }
+        }
+
+        // Tik matching logica (voor touch screens)
+        function verwerkBetekenisSelectie(betekenis, element) {
+            // Verwijder eerdere selectie styles
+            document.querySelectorAll('#draggables-container div').forEach(div => {
+                div.classList.remove('bg-indigo-600', 'text-white', 'scale-105');
+            });
+
+            geselecteerdeBetekenis = betekenis;
+            element.classList.add('bg-indigo-600', 'text-white', 'scale-105');
+
+            probeerTikMatch();
+        }
+
+        async function probeerTikMatch(wordItem = null, cardElement = null) {
+            if (!geselecteerdeBetekenis) return;
+
+            let targetId = geselecteerdWoordId;
+            let targetCard = cardElement || document.getElementById(`card-${targetId}`);
+            let targetItem = wordItem || woordenData.find(w => w.id === targetId);
+
+            if (!targetItem || !targetCard) return;
+
+            // Alleen matchen als het woord als Engels is herkend
+            if (!targetCard.classList.contains('selected-english')) return;
+
+            if (targetItem.betekenis === geselecteerdeBetekenis) {
+                // Succesvolle match!
+                voerSuccesvolleMatchIn(targetItem, targetCard, geselecteerdeBetekenis);
+                
+                // Verwijder de gekoppelde draggable uit de DOM
+                const dragDivs = Array.from(document.querySelectorAll('#draggables-container div'));
+                const matchedDiv = dragDivs.find(d => d.innerText === geselecteerdeBetekenis);
+                if (matchedDiv) matchedDiv.remove();
+
+                // Reset mobiele selectie
+                geselecteerdeBetekenis = null;
+                geselecteerdWoordId = null;
+            } else {
+                // Foutieve match
+                targetCard.classList.add('bg-rose-50', 'border-rose-300');
+                setTimeout(() => {
+                    targetCard.classList.remove('bg-rose-50', 'border-rose-300');
+                }, 800);
+            }
+        }
+
+        // Drag and drop handler
+        async function verwerkDropOpWoord(e, item, cardElement) {
+            e.preventDefault();
+            cardElement.classList.remove('drag-over');
+
+            // Mag alleen droppen als hij al is aangemerkt als Engels leenwoord
+            if (!cardElement.classList.contains('selected-english')) {
+                return;
+            }
+
+            const betekenis = e.dataTransfer.getData('text/plain');
+            const dragId = e.dataTransfer.getData('element-id');
+
+            if (item.betekenis === betekenis) {
+                voerSuccesvolleMatchIn(item, cardElement, betekenis);
+                
+                // Verwijder draggable
+                const draggableEl = document.getElementById(dragId);
+                if (draggableEl) draggableEl.remove();
+            } else {
+                // Flits rood
+                cardElement.classList.add('bg-rose-50', 'border-rose-300');
+                setTimeout(() => {
+                    cardElement.classList.remove('bg-rose-50', 'border-rose-300');
+                }, 800);
+            }
+        }
+
+        async function voerSuccesvolleMatchIn(item, cardElement, betekenis) {
+            cardElement.classList.add('matched');
+            cardElement.classList.remove('selected-english', 'bg-indigo-50/40');
+            cardElement.classList.add('bg-emerald-50/50', 'border-emerald-500');
+            
+            cardElement.querySelector('.text-sm').innerText = "Correct Gekoppeld ✓";
+            cardElement.querySelector('.text-sm').className = "text-xs text-emerald-600 font-bold block mb-1";
+            
+            const dropZone = cardElement.querySelector('.drop-zone');
+            dropZone.innerHTML = `
+                <div class="text-emerald-800 text-xs font-semibold p-1">
+                    <i class="fa-solid fa-circle-check text-emerald-500"></i> ${betekenis}
+                </div>
+            `;
+            dropZone.className = "mt-3 p-2 bg-emerald-100 rounded-xl border border-emerald-200 text-center";
+
+            // Sla match live op in Firebase
+            const docRef = doc(studentsCollectionRef, studentId);
+            const snap = await getDoc(docRef);
+            if (snap.exists()) {
+                const data = snap.val();
+                const matches = data.screen1Matches || {};
+                matches[item.id] = betekenis;
+                await updateDoc(docRef, { screen1Matches: matches });
+                
+                // Controleer of alle 4 Engelse woorden gekoppeld zijn
+                const maxMatches = woordenData.filter(w => w.isEngels).length;
+                if (Object.keys(matches).length === maxMatches) {
+                    document.getElementById('scherm1-feedback').innerHTML = `
+                        <div class="bg-emerald-100 border border-emerald-300 text-emerald-800 p-4 rounded-2xl font-bold animate-bounce shadow-md">
+                            🎉 Wauw! Je hebt alle betekenissen perfect gekoppeld! Wacht rustig af tot de docent het Dictee start.
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        // SCHERM 2: DICTEE OPBOUWEN
         function laadScherm2() {
             const container = document.getElementById('dictee-container');
             container.innerHTML = '';
 
-            dicteeZinnen.forEach(item => {
+            dicteeZinnen.forEach((item) => {
                 const box = document.createElement('div');
-                box.className = 'sentence-box';
+                box.className = 'sentence-box bg-slate-50 border border-slate-200/80 p-5 rounded-2xl flex flex-col gap-4 shadow-sm';
 
-                const audioBtn = document.createElement('button');
-                audioBtn.className = 'btn btn-audio';
-                audioBtn.innerText = '🔊 Luister naar zin ' + item.id;
-                audioBtn.onclick = function() {
-                    spreekZinUit(item.zin);
-                };
+                box.innerHTML = `
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Zin ${item.id} van 5</span>
+                        <button id="speaker-btn-${item.id}" class="self-start sm:self-auto px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-sm active:scale-95 transition-all">
+                            <i class="fa-solid fa-volume-high text-sm"></i> Luister naar Zin ${item.id}
+                        </button>
+                    </div>
+                    
+                    <div>
+                        <input type="text" id="input-zin-${item.id}" placeholder="Typ hier de hele zin exact na..." 
+                            class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-amber-500 transition-colors text-base font-semibold">
+                    </div>
 
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.placeholder = 'Typ hier de hele zin na...';
-                input.id = 'input-zin-' + item.id;
+                    <div id="feedback-zin-${item.id}" class="hidden p-3 rounded-xl font-bold text-xs flex items-center gap-2">
+                        <!-- Live feedback -->
+                    </div>
+                `;
 
-                const feedback = document.createElement('div');
-                feedback.className = 'feedback';
-                feedback.id = 'feedback-zin-' + item.id;
+                // Event listener voor spraak
+                box.querySelector(`#speaker-btn-${item.id}`).onclick = () => spreekZinUit(item.zin);
 
-                input.oninput = function() {
-                    controleerZin(input.value, item.antwoord, feedback);
-                };
+                // Event listener voor live nakijken en typo rapportage
+                const inputEl = box.querySelector(`#input-zin-${item.id}`);
+                inputEl.oninput = () => analyseerLiveZin(inputEl.value, item);
 
-                box.appendChild(audioBtn);
-                box.appendChild(input);
-                box.appendChild(feedback);
                 container.appendChild(box);
             });
         }
@@ -274,75 +762,174 @@
                 window.speechSynthesis.cancel();
                 const speech = new SpeechSynthesisUtterance(tekst);
                 speech.lang = 'nl-NL';
-                speech.pitch = 1;
-                speech.rate = 0.9;
+                speech.pitch = 1.05;
+                speech.rate = 0.82; // Comfortabel tempo voor leerlingen
                 window.speechSynthesis.speak(speech);
             } else {
-                alert("Helaas ondersteunt jouw browser geen geluid. Gebruik Google Chrome.");
+                toonAlert('Geen geluid', 'Spraaksynthese wordt helaas niet ondersteund in deze browser.', 'error');
             }
         }
 
-        // Automatische nakijklogica
-        function controleerZin(ingevuld, correct, feedbackElement) {
-            let schoonIngevuld = ingevuld.trim().toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
-            let schoonCorrect = correct.trim().toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+        // Automatische realtime nakijk- en typo analyse logic
+        async function analyseerLiveZin(ingevuld, item) {
+            const feedbackEl = document.getElementById(`feedback-zin-${item.id}`);
+            const cleanIngevuld = maakSchoon(ingevuld);
+            const cleanCorrect = maakSchoon(item.antwoord);
 
-            if (schoonIngevuld === "") {
-                feedbackElement.style.display = 'none';
-            } else if (schoonIngevuld === schoonCorrect) {
-                feedbackElement.style.display = 'block';
-                feedbackElement.innerHTML = "<span class='correct'>✓ Helemaal goed!</span>";
+            let isCorrect = (cleanIngevuld === cleanCorrect);
+            let typos = [];
+
+            // Analyseer specifieke typefouten (wanneer er überhaupt getypt is)
+            if (ingevuld.trim() !== "") {
+                typos = detecteerTypefouten(ingevuld.trim(), item.antwoord, item.leenwoord);
+            }
+
+            // Update UI feedback voor leerling
+            feedbackEl.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-800', 'bg-amber-50', 'text-amber-800');
+            
+            if (ingevuld.trim() === "") {
+                feedbackEl.classList.add('hidden');
+            } else if (isCorrect) {
+                feedbackEl.classList.add('bg-emerald-100', 'text-emerald-800');
+                feedbackEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-500 text-sm"></i> Helemaal goed geschreven!`;
             } else {
-                feedbackElement.style.display = 'block';
-                feedbackElement.innerHTML = "<span class='incorrect'>Typ nog even verder...</span>";
+                feedbackEl.classList.add('bg-amber-50', 'text-amber-800');
+                feedbackEl.innerHTML = `<i class="fa-solid fa-pen-fancy text-amber-500 text-sm"></i> Blijf typen... Let goed op de letters en spaties.`;
+            }
+
+            // Update database met live score en foutenlijst (RULE 1 en RULE 2)
+            const docRef = doc(studentsCollectionRef, studentId);
+            const snap = await getDoc(docRef);
+            if (snap.exists()) {
+                const answers = snap.val().screen2Answers || {};
+                answers[item.id] = {
+                    typed: ingevuld,
+                    isCorrect: isCorrect,
+                    typos: typos
+                };
+                await updateDoc(docRef, { screen2Answers: answers });
             }
         }
+
+        // Hulpfunctie om zinnen te vergelijken op een soepele manier
+        function maakSchoon(tekst) {
+            return tekst
+                .trim()
+                .toLowerCase()
+                .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "") // Verwijder interpunctie
+                .replace(/\s+/g, " "); // Vervang meervoudige spaties door één spatie
+        }
+
+        // Geavanceerde foutdetectie speciaal gericht op de Engelse leenwoorden
+        function detecteerTypefouten(ingevuld, correct, leenwoord) {
+            const typos = [];
+            const ingevuldWoorden = ingevuld.toLowerCase().split(/\s+/);
+            const correctWoorden = correct.toLowerCase().split(/\s+/);
+            
+            // Controleer specifiek op de spelling van het Engelse leenwoord
+            const cleanLeenwoord = leenwoord.toLowerCase().replace(/[.\-_]/g, "");
+            let leenwoordGevondenInInvoer = false;
+
+            ingevuldWoorden.forEach(w => {
+                const cleanW = w.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "");
+                if (cleanW.includes(cleanLeenwoord) || cleanLeenwoord.includes(cleanW)) {
+                    leenwoordGevondenInInvoer = true;
+                    if (cleanW !== leenwoord.toLowerCase()) {
+                        typos.push(`"${w}" (leenwoord moet zijn: "${leenwoord}")`);
+                    }
+                }
+            });
+
+            if (!leenwoordGevondenInInvoer) {
+                typos.push(`Engelse leenwoord "${leenwoord}" ontbreekt of is onherkenbaar`);
+            }
+
+            // Algemene controle op ontbrekende of extra woorden
+            if (ingevuldWoorden.length < correctWoorden.length - 2) {
+                typos.push("Zin is te kort of onvolledig");
+            } else {
+                // Check of er andere woorden verkeerd gespeld zijn
+                correctWoorden.forEach((correctW, idx) => {
+                    const ingevuldW = ingevuldWoorden[idx];
+                    if (ingevuldW) {
+                        const cleanCorrectW = correctW.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "");
+                        const cleanIngevuldW = ingevuldW.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "");
+                        
+                        if (cleanCorrectW !== cleanIngevuldW && cleanCorrectW !== leenwoord.toLowerCase()) {
+                            typos.push(`"${ingevuldW}" i.p.v. "${correctW}"`);
+                        }
+                    }
+                });
+            }
+
+            return [...new Set(typos)]; // Retourneer unieke fouten
+        }
+
+        // Reset functionaliteit (Wist database voor een schone start)
+        window.toonResetBevestiging = function() {
+            document.getElementById('confirm-modal').classList.remove('hidden');
+        };
+
+        window.sluitModal = function() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+        };
+
+        window.bevestigResetSessie = async function() {
+            sluitModal();
+            try {
+                // 1. Reset het actieve scherm naar Scherm 1
+                await updateDoc(sessionDocRef, { screen: 1 });
+                setActiefDocentKnop(1);
+
+                // 2. Verwijder alle leerlingen uit de Firestore database (RULE 2 - Geen complexe queries, gewoon ophalen en loopen)
+                const snapshot = await getDocs(studentsCollectionRef);
+                const deletePromises = [];
+                snapshot.forEach((studentDoc) => {
+                    deletePromises.push(deleteDoc(doc(studentsCollectionRef, studentDoc.id)));
+                });
+                await Promise.all(deletePromises);
+
+                toonAlert('Sessie Gereset!', 'Alle live-scores en studenten zijn succesvol gewist.', 'success');
+            } catch (err) {
+                toonAlert('Fout', 'Kon de sessie niet resetten: ' + err.message, 'error');
+            }
+        };
+
+        // Custom Alert systeem ter vervanging van de verboden native alert()
+        function toonAlert(titel, bericht, type = 'info') {
+            const alertBanner = document.getElementById('custom-alert');
+            const alertIcon = document.getElementById('alert-icon');
+            const alertMessage = document.getElementById('alert-message');
+
+            alertBanner.classList.remove('hidden', 'bg-emerald-50', 'border-emerald-200', 'text-emerald-800', 'bg-rose-50', 'border-rose-200', 'text-rose-800', 'bg-amber-50', 'border-amber-200', 'text-amber-800');
+            
+            alertMessage.innerHTML = `<strong>${titel}</strong>: ${bericht}`;
+
+            if (type === 'success') {
+                alertBanner.classList.add('bg-emerald-50', 'border-emerald-200', 'text-emerald-800');
+                alertIcon.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-500"></i>`;
+            } else if (type === 'error') {
+                alertBanner.classList.add('bg-rose-50', 'border-rose-200', 'text-rose-800');
+                alertIcon.innerHTML = `<i class="fa-solid fa-circle-exclamation text-rose-500"></i>`;
+            } else {
+                // Warning / Info
+                alertBanner.classList.add('bg-amber-50', 'border-amber-200', 'text-amber-800');
+                alertIcon.innerHTML = `<i class="fa-solid fa-circle-info text-amber-500"></i>`;
+            }
+
+            alertBanner.classList.remove('hidden');
+            
+            // Verberg automatisch na 5 seconden bij success
+            if (type === 'success') {
+                setTimeout(() => {
+                    sluitAlert();
+                }, 5000);
+            }
+        }
+
+        window.sluitAlert = function() {
+            document.getElementById('custom-alert').classList.add('hidden');
+        };
     </script>
-</head>
-<body>
-
-<div class="container">
-    <!-- INLOGSCHERM -->
-    <div id="login-screen" class="screen active">
-        <h1>Engelse Leenwoorden</h1>
-        <p style="text-align:center;">Kies je rol om te starten:</p>
-        
-        <button class="btn" onclick="startSessie('docent')">Ik ben de Docent</button>
-        
-        <hr style="margin: 25px 0; border: 0; border-top: 1px solid #ccc;">
-        
-        <div style="margin-bottom: 15px;">
-            <label for="voornaam-input" style="font-weight: bold; display: block; margin-bottom: 5px;">Voornaam leerling:</label>
-            <input type="text" id="voornaam-input" placeholder="Typ hier je voornaam...">
-        </div>
-        <button class="btn" onclick="startSessie('leerling')" style="background-color: #9b59b6; margin-top: 0;">Ik ben een Leerling</button>
-    </div>
-
-    <!-- DOCENT SCHERM -->
-    <div id="docent-screen" class="screen">
-        <h2>Docenten Dashboard</h2>
-        <p>Bestuur hier welk scherm de leerlingen zien:</p>
-        <button class="btn" onclick="setScherm(1)">Zet leerlingen op Scherm 1 (Woorden herkennen)</button>
-        <button class="btn" onclick="setScherm(2)" style="background-color: #e67e22;">Zet leerlingen op Scherm 2 (Het Dictee)</button>
-        <p style="text-align: center; margin-top: 20px; color: gray;">Tip: Open een extra tabblad of browser als leerling om het live te testen!</p>
-    </div>
-
-    <!-- LEERLING SCHERM 1: HERKENNEN -->
-    <div id="leerling-scherm1" class="screen">
-        <h2>Scherm 1: Herken het Engelse Woord</h2>
-        <div id="student-welcome" class="welcome-msg"></div>
-        <p>Klik op de woorden die oorspronkelijk uit het <strong>Engels</strong> komen!</p>
-        <div class="word-grid" id="grid-container"></div>
-        <div id="scherm1-feedback" style="text-align: center; font-weight: bold; margin-top: 15px;"></div>
-    </div>
-
-    <!-- LEERLING SCHERM 2: DICTEE -->
-    <div id="leerling-scherm2" class="screen">
-        <h2>Scherm 2: Het Dictee</h2>
-        <p>Luister naar de zin en typ hem na. Let goed op het Engelse leenwoord!</p>
-        <div id="dictee-container"></div>
-    </div>
-</div>
-
 </body>
 </html>
